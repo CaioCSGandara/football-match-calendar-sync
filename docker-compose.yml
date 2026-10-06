@@ -1,6 +1,6 @@
 services:
   rabbitmq:
-    container_name: 'rabbitmq-calenar-worker-dev'
+    container_name: 'rabbitmq-football-match-calendar-sync-dev'
     image: 'rabbitmq:4.3.6-management-alpine'
     environment:
       - 'RABBITMQ_DEFAULT_USER=admin'
