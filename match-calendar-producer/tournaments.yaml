@@ -1,0 +1,7 @@
+tournaments:
+  - name: "UEFA Champions League"
+    tournament_id: 7
+    season_id: 96518
+  - name: "Brasileirão Série A"
+    tournament_id: 325
+    season_id: 87678

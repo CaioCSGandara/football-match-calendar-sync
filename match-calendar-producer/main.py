@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import time
 from datetime import datetime
 from typing import List, Dict, Any
@@ -10,20 +11,12 @@ from matches_scrapper import build_http_session, fetch_events_page
 from match_mapper import MatchMapper
 from rabbitmq_client import RabbitMQClient
 from match_producer import MatchProducer
+from yaml_reader import read_yaml
 
-# Configuração dos torneios a serem monitorados (Tournament ID, Season ID)
-TOURNAMENTS_CONFIG: List[Dict[str, Any]] = [
-    {
-        "name": "UEFA Champions League",
-        "tournament_id": 7,
-        "season_id": 96518,
-    },
-    {
-        "name": "Brasileirão Série A",
-        "tournament_id": 325,
-        "season_id": 87678,
-    }
-]
+TOURNAMENTS_FILE_PATH = Path(__file__).parent / "tournaments.yaml"
+
+# Configuração dos torneios a serem monitorados (carregada do tournaments.yaml)
+TOURNAMENTS_CONFIG: List[Dict[str, Any]] = read_yaml(TOURNAMENTS_FILE_PATH).get("tournaments", [])
 
 PAGE_DELAY_SECONDS = int(os.getenv("SCRAPER_PAGE_DELAY", "15"))
 
