@@ -7,20 +7,20 @@ from typing import Dict, Any, Optional
 @dataclass(frozen=True)
 class MatchEvent:
     """Modelo canônico que representa uma partida no ecossistema interno."""
-    match_id: int
-    tournament_id: int
-    tournament_name: str
-    season_id: int
-    round_number: Optional[int]
-    status: str
-    start_timestamp: int
-    start_time_iso: str
-    home_team_id: int
-    home_team_name: str
-    away_team_id: int
-    away_team_name: str
-    home_score: Optional[int] = None
-    away_score: Optional[int] = None
+    match_id: Optional[int] = None
+    tournament_name: Optional[str] = None
+    tournament_slug: Optional[str] = None
+    season_year: Optional[str] = None
+    round_number: Optional[int] = None
+    status: Optional[str] = None
+    venue_name: Optional[str] = None
+    venue_slug: Optional[str] = None
+    venue_city: Optional[str] = None
+    venue_country: Optional[str] = None
+    home_team_name: Optional[str] = None
+    away_team_name: Optional[str] = None
+    start_timestamp: Optional[int] = None
+    start_time_iso: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Converte a dataclass para dicionário nativo."""
@@ -43,55 +43,80 @@ class MatchMapper:
         Recebe o dict de um evento retornado pela API do Sofascore
         e constrói a instância canônica validada.
         """
-        # Extração de IDs e dados do torneio
-        match_id = int(raw_event["id"])
-        
-        tournament_info = raw_event.get("tournament", {})
-        unique_tournament = tournament_info.get("uniqueTournament", {})
-        tournament_id = int(unique_tournament.get("id") or tournament_info.get("id", 0))
-        tournament_name = unique_tournament.get("name") or tournament_info.get("name", "Unknown")
+        match_id = raw_event.get("id")
+        if match_id is not None:
+            try:
+                match_id = int(match_id)
+            except (ValueError, TypeError):
+                match_id = None
 
-        season_id = int(raw_event.get("season", {}).get("id", 0))
-        round_info = raw_event.get("roundInfo", {})
+        # Torneio
+        tournament = raw_event.get("tournament") or {}
+        tournament_name = tournament.get("name")
+        tournament_slug = tournament.get("slug")
+
+        # Temporada
+        season = raw_event.get("season") or {}
+        season_year = season.get("year")
+        if season_year is not None:
+            season_year = str(season_year)
+
+        # Rodada
+        round_info = raw_event.get("roundInfo") or {}
         round_number = round_info.get("round")
+        if round_number is not None:
+            try:
+                round_number = int(round_number)
+            except (ValueError, TypeError):
+                round_number = None
 
-        # Status e Horário
-        status_info = raw_event.get("status", {})
-        status = status_info.get("type", "unknown").lower()
+        # Status
+        status_info = raw_event.get("status") or {}
+        status = status_info.get("type")
+        if status is not None:
+            status = str(status).lower()
 
-        start_ts = int(raw_event["startTimestamp"])
-        start_iso = datetime.fromtimestamp(start_ts, tz=timezone.utc).isoformat()
+        # Localização (Venue)
+        venue = raw_event.get("venue") or {}
+        venue_name = venue.get("name")
+        venue_slug = venue.get("slug")
+
+        city = venue.get("city") or {}
+        venue_city = city.get("name")
+
+        country = city.get("country") or {}
+        venue_country = country.get("name")
 
         # Equipes
-        home_team = raw_event.get("homeTeam", {})
-        away_team = raw_event.get("awayTeam", {})
+        home_team = raw_event.get("homeTeam") or {}
+        home_team_name = home_team.get("name")
 
-        home_team_id = int(home_team["id"])
-        home_team_name = str(home_team.get("name", "Unknown"))
-        
-        away_team_id = int(away_team["id"])
-        away_team_name = str(away_team.get("name", "Unknown"))
+        away_team = raw_event.get("awayTeam") or {}
+        away_team_name = away_team.get("name")
 
-        # Placar (se a partida já começou ou terminou)
-        home_score_data = raw_event.get("homeScore", {})
-        away_score_data = raw_event.get("awayScore", {})
-        
-        home_score = home_score_data.get("current")
-        away_score = away_score_data.get("current")
+        # Data e Hora
+        start_ts = raw_event.get("startTimestamp")
+        start_time_iso = None
+        if start_ts is not None:
+            try:
+                start_ts = int(start_ts)
+                start_time_iso = datetime.fromtimestamp(start_ts, tz=timezone.utc).isoformat()
+            except (ValueError, TypeError):
+                start_ts = None
 
         return MatchEvent(
             match_id=match_id,
-            tournament_id=tournament_id,
             tournament_name=tournament_name,
-            season_id=season_id,
-            round_number=int(round_number) if round_number is not None else None,
+            tournament_slug=tournament_slug,
+            season_year=season_year,
+            round_number=round_number,
             status=status,
-            start_timestamp=start_ts,
-            start_time_iso=start_iso,
-            home_team_id=home_team_id,
+            venue_name=venue_name,
+            venue_slug=venue_slug,
+            venue_city=venue_city,
+            venue_country=venue_country,
             home_team_name=home_team_name,
-            away_team_id=away_team_id,
             away_team_name=away_team_name,
-            home_score=int(home_score) if home_score is not None else None,
-            away_score=int(away_score) if away_score is not None else None
+            start_timestamp=start_ts,
+            start_time_iso=start_time_iso,
         )
