@@ -2,9 +2,11 @@ import time
 from typing import Dict, Any, List, Tuple, Optional
 import tls_client
 
+from browser_utils import get_random_browser_profile
+
 BASE_URL = "https://www.sofascore.com/api/v1"
+
 BASE_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:153.0) Gecko/20100101 Firefox/153.0",
     "Accept": "*/*",
     "Accept-Language": "en-US,en;q=0.9",
     "Sec-Fetch-Dest": "empty",
@@ -16,10 +18,19 @@ BASE_HEADERS = {
 }
 
 
-def build_http_session() -> tls_client.Session:
-    """Cria e devolve uma sessão tls-client configurada para impersonar o Firefox."""
+def build_headers(user_agent: Optional[str] = None) -> Dict[str, str]:
+    """Gera o dicionário de cabeçalhos HTTP com o User-Agent especificado ou aleatório."""
+    headers = BASE_HEADERS.copy()
+    ua = user_agent or get_random_browser_profile()["user_agent"]
+    headers["User-Agent"] = ua
+    return headers
+
+
+def build_http_session(client_identifier: Optional[str] = None) -> tls_client.Session:
+    """Cria e devolve uma sessão tls-client configurada com client_identifier aleatório ou especificado."""
+    cid = client_identifier or get_random_browser_profile()["client_identifier"]
     return tls_client.Session(
-        client_identifier="firefox_120",
+        client_identifier=cid,
         random_tls_extension_order=True
     )
 
@@ -30,18 +41,29 @@ def build_events_url(tournament_id: int, season_id: int, page: int) -> str:
 
 
 def fetch_events_page(
-    session: tls_client.Session, 
-    tournament_id: int, 
-    season_id: int, 
-    page: int
+    session: Optional[tls_client.Session] = None, 
+    tournament_id: int = 0, 
+    season_id: int = 0, 
+    page: int = 0
 ) -> Tuple[List[Dict[str, Any]], bool]:
     """
     Executa a requisição HTTP para uma página específica.
+    A cada iteração (chamada da função), seleciona aleatoriamente um par de (client_identifier, user_agent)
+    para criar uma sessão de TLS e cabeçalhos correspondentes, prevenindo bloqueios anti-bot.
     Retorna uma tupla contendo a lista de eventos brutos e o booleano indicando se há próxima página.
     """
+    profile = get_random_browser_profile()
+    
+    # Cria uma sessão com o client_identifier sorteado para essa requisição
+    active_session = tls_client.Session(
+        client_identifier=profile["client_identifier"],
+        random_tls_extension_order=True
+    )
+    headers = build_headers(profile["user_agent"])
+
     url = build_events_url(tournament_id, season_id, page)
     
-    response = session.get(url, headers=BASE_HEADERS)
+    response = active_session.get(url, headers=headers)
 
     if response.status_code == 200:
         data = response.json()
