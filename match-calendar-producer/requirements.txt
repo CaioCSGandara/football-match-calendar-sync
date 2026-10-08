@@ -3,3 +3,4 @@ typing-extensions
 pika
 schedule
 apscheduler
+pyyaml
