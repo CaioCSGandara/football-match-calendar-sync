@@ -1,6 +1,6 @@
 import json
 import pika
-from rabbitmq_client import RabbitMQClient
+from app.config.rabbitmq_client import RabbitMQClient
 
 class MatchProducer:
     def __init__(self, rabbit_client: RabbitMQClient, exchange: str = "calendar.matches.sync.exchange", routing_key: str = "matches.scheduled"):

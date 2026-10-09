@@ -1,9 +1,9 @@
 from pathlib import Path
 import random
 from typing import Dict, List
-from yaml_reader import read_yaml
+from app.utils.yaml_reader import read_yaml
 
-CONFIG_FILE_PATH = Path(__file__).parent / "browser_profiles.yaml"
+CONFIG_FILE_PATH = Path(__file__).parent / "config" / "browser_profiles.yaml"
 BROWSER_PROFILES: List[Dict[str, str]] = read_yaml(CONFIG_FILE_PATH).get("browser_profiles", [])
 
 

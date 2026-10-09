@@ -1,17 +1,23 @@
 import os
+import sys
 from pathlib import Path
 import time
 from datetime import datetime
 from typing import List, Dict, Any
 
+# Adiciona o diretório raiz do projeto ao sys.path para permitir importações do pacote 'app'
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
-from matches_scrapper import build_http_session, fetch_events_page, fetch_latest_season_id
+from match_scrapper import build_http_session, fetch_events_page, fetch_latest_season_id
 from match_mapper import MatchMapper
-from rabbitmq_client import RabbitMQClient
+from app.config.rabbitmq_client import RabbitMQClient
 from match_producer import MatchProducer
-from yaml_reader import read_yaml
+from app.utils.yaml_reader import read_yaml
 
 TOURNAMENTS_FILE_PATH = Path(__file__).parent / "tournaments.yaml"
 

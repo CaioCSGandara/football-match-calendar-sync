@@ -2,7 +2,7 @@ import time
 from typing import Dict, Any, List, Tuple, Optional
 import tls_client
 
-from browser_utils import get_random_browser_profile
+from app.utils.browser_utils import get_random_browser_profile
 
 BASE_URL = "https://www.sofascore.com/api/v1"
 
