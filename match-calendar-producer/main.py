@@ -7,7 +7,7 @@ from typing import List, Dict, Any
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
-from matches_scrapper import build_http_session, fetch_events_page
+from matches_scrapper import build_http_session, fetch_events_page, fetch_latest_season_id
 from match_mapper import MatchMapper
 from rabbitmq_client import RabbitMQClient
 from match_producer import MatchProducer
@@ -38,7 +38,12 @@ def run_pipeline():
         for tournament in TOURNAMENTS_CONFIG:
             t_name = tournament["name"]
             t_id = tournament["tournament_id"]
-            s_id = tournament["season_id"]
+
+            try:
+                s_id = fetch_latest_season_id(tournament_id=t_id, session=session)
+            except Exception as exc:
+                print(f"[{t_name}] Falha ao capturar a temporada mais recente: {exc}")
+                continue
 
             print(f"\n--- Iniciando coleta: {t_name} (Torneio: {t_id}, Temporada: {s_id}) ---")
             page = 0

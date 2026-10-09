@@ -35,9 +35,44 @@ def build_http_session(client_identifier: Optional[str] = None) -> tls_client.Se
     )
 
 
+def build_seasons_url(tournament_id: int) -> str:
+    """Gera a URL para consultar as temporadas de um torneio."""
+    return f"{BASE_URL}/unique-tournament/{tournament_id}/seasons"
+
+
 def build_events_url(tournament_id: int, season_id: int, page: int) -> str:
     """Gera a URL parametrizada para paginação dos próximos eventos."""
     return f"{BASE_URL}/unique-tournament/{tournament_id}/season/{season_id}/events/next/{page}"
+
+
+def fetch_latest_season_id(
+    tournament_id: int, 
+    session: Optional[tls_client.Session] = None
+) -> int:
+    """
+    Executa a requisição HTTP na API do Sofascore para obter a lista de temporadas de um torneio
+    e retorna o id do primeiro elemento do array (temporada mais recente).
+    """
+    profile = get_random_browser_profile()
+    active_session = session or tls_client.Session(
+        client_identifier=profile["client_identifier"],
+        random_tls_extension_order=True
+    )
+    headers = build_headers(profile["user_agent"])
+    url = build_seasons_url(tournament_id)
+
+    response = active_session.get(url, headers=headers)
+
+    if response.status_code == 200:
+        data = response.json()
+        seasons = data.get("seasons", [])
+        if seasons and isinstance(seasons, list) and len(seasons) > 0 and "id" in seasons[0]:
+            return int(seasons[0]["id"])
+        raise ValueError(f"Nenhuma temporada encontrada para o torneio ID {tournament_id}.")
+
+    raise RuntimeError(
+        f"Erro HTTP {response.status_code} ao obter temporadas do torneio {tournament_id}: {response.text[:200]}"
+    )
 
 
 def fetch_events_page(
